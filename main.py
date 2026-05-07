@@ -10,8 +10,9 @@ from faker import Faker
 from concurrent.futures import ThreadPoolExecutor
 
 # --- কনফিগারেশন ---
-TOKEN = '8619212784:AAGNRWitsKF5EScwGnTvhUMAzatrGjj2Glo' 
-# আপনার দেওয়া নতুন URL
+# আপনার দেওয়া নতুন বট টোকেন
+TOKEN = '8783194900:AAH__MsqIgqwKn_-Pzg2NdxQsIJ1OjvAVY8' 
+# আপনার গুগল শিট URL
 WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzUbzyLxxuH__wp3n_ntaEpeYpQ7OeAsayOoXe3XAztEZa28sP735Em65p9gL2DIHIlqA/exec"
 ADMIN_ID = 8061525743 
 
@@ -24,9 +25,9 @@ user_tasks = {}
 
 @app.route('/')
 def home():
-    return "🚀 System Active with New Google Script URL!"
+    return "🚀 System Active with New Token and URL!"
 
-# ব্যাকগ্রাউন্ডে ডাটা পাঠানোর ফাংশন (যাতে বট স্লো না হয়)
+# ডাটা দ্রুত পাঠানোর জন্য ফাংশন
 def send_to_sheet(row):
     try:
         requests.post(WEB_APP_URL, json={"row": row}, headers={"Content-Type": "application/json"}, timeout=15)
@@ -53,7 +54,7 @@ def welcome(message):
 
 # ৪ মিনিটের টাইমার ফাংশন
 def start_timeout_timer(chat_id):
-    time.sleep(240) # ২৪০ সেকেন্ড = ৪ মিনিট
+    time.sleep(240)
     if chat_id in user_tasks and 'completed' not in user_tasks[chat_id]:
         bot.send_message(chat_id, "⏰ Time's up! Task cancelled.")
         bot.clear_step_handler_by_chat_id(chat_id)
@@ -67,7 +68,6 @@ def show_tasks(message):
 
 @bot.callback_query_handler(func=lambda call: call.data == "task_inst")
 def start_task(call):
-    # রেনডম ডাটা তৈরি
     f_name = f"{fake.first_name()} {fake.last_name()}"
     login = f"{fake.user_name()}{random.randint(10, 99)}"
     pwd = fake.password(length=10)
@@ -80,7 +80,6 @@ def start_task(call):
             f"⏳ আপনার হাতে ৪ মিনিট সময় আছে। এর মধ্যে **2FA Key** দিন।")
     bot.send_message(call.message.chat.id, info, parse_mode="Markdown")
     
-    # টাইমার শুরু
     threading.Thread(target=start_timeout_timer, args=(call.message.chat.id,)).start()
     bot.register_next_step_handler(call.message, get_otp)
 
@@ -109,14 +108,13 @@ def submit_data(call):
         user_tasks[chat_id]['completed'] = True
         row = [time.ctime(), str(chat_id), data['name'], data['login'], data['pass'], data.get('2fa_key', 'N/A'), "Pending"]
         
-        # ব্যাকগ্রাউন্ডে শিটে ডাটা পাঠানো
         executor.submit(send_to_sheet, row)
         bot.edit_message_text("✅ আপনার রিপোর্ট জমা হয়েছে। অ্যাডমিন চেক করলে ব্যালেন্স পাবেন।", chat_id, call.message.message_id)
         user_tasks.pop(chat_id, None)
 
 @bot.message_handler(func=lambda message: message.text == "⚙️ Admin Panel" and message.from_user.id == ADMIN_ID)
 def admin_panel(message):
-    bot.send_message(message.chat.id, "🛠 **Admin Panel Active**\n\nগুগল শিটে 'Approved' লিখলে ইউজার অটোমেটিক নোটিফিকেশন পাবে।")
+    bot.send_message(message.chat.id, "🛠 **Admin Panel Active**\n\nগুগল শিটে 'Approved' লিখলে ইউজার নোটিফিকেশন পাবে।")
 
 def run_web():
     app.run(host='0.0.0.0', port=int(os.environ.get("PORT", 5000)))
@@ -124,4 +122,4 @@ def run_web():
 if __name__ == '__main__':
     threading.Thread(target=run_web).start()
     bot.infinity_polling()
-                            
+        
